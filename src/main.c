@@ -1,49 +1,55 @@
 /*
- * Copyright (c) 2021 Golioth, Inc.
+ * copyright (c) 2023 golioth, inc.
  *
- * SPDX-License-Identifier: Apache-2.0
+ * spdx-license-identifier: apache-2.0
  */
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(golioth_hello, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(hello_zephyr, LOG_LEVEL_DBG);
 
-#include <net/golioth/system_client.h>
+#include "golioth.h"
+#include <samples/common/sample_credentials.h>
+#include <string.h>
+#include <zephyr/kernel.h>
+
 #include <samples/common/net_connect.h>
-#include <zephyr/net/coap.h>
 
-static struct golioth_client *client = GOLIOTH_SYSTEM_CLIENT_GET();
-
+golioth_client_t client;
 static K_SEM_DEFINE(connected, 0, 1);
 
-static void golioth_on_connect(struct golioth_client *client)
-{
-	k_sem_give(&connected);
+static void on_client_event(golioth_client_t client, golioth_client_event_t event, void* arg) {
+    bool is_connected = (event == GOLIOTH_CLIENT_EVENT_CONNECTED);
+    if (is_connected) {
+        k_sem_give(&connected);
+    }
+    LOG_INF("Golioth client %s", is_connected ? "connected" : "disconnected");
 }
 
-void main(void)
-{
-	int counter = 0;
-	int err;
+int main(void) {
+    int counter = 0;
 
-	LOG_DBG("Start Hello sample");
+    LOG_DBG("start hello sample");
 
-	if (IS_ENABLED(CONFIG_GOLIOTH_SAMPLES_COMMON)) {
-		net_connect();
-	}
+    net_connect();
 
-	client->on_connect = golioth_on_connect;
-	golioth_system_client_start();
+    /* Note: In production, you would provision unique credentials onto each
+     * device. For simplicity, we provide a utility to hardcode credentials as
+     * kconfig options in the samples.
+     */
+    const golioth_client_config_t* client_config = golioth_sample_credentials_get();
 
-	k_sem_take(&connected, K_FOREVER);
+    client = golioth_client_create(client_config);
 
-	while (true) {
-		LOG_INF("Sending hello! %d", counter);
+    golioth_client_register_event_callback(client, on_client_event, NULL);
 
-		err = golioth_send_hello(client);
-		if (err) {
-			LOG_WRN("Failed to send hello!");
-		}
-		++counter;
-		k_sleep(K_SECONDS(5));
-	}
+    k_sem_take(&connected, K_FOREVER);
+
+    while (true) {
+        LOG_INF("Sending hello! %d", counter);
+
+        ++counter;
+        k_sleep(K_SECONDS(5));
+    }
+
+    return 0;
 }

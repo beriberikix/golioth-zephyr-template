@@ -1,0 +1,22 @@
+# Copyright (c) 2022-2023 Golioth, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+manifest:
+  projects:
+    - name: golioth
+      path: modules/lib/golioth-firmware-sdk
+      revision: main
+      url: https://github.com/golioth/golioth-firmware-sdk.git
+      submodules: true
+      import:
+        file: west-zephyr.yml
+        path-prefix: deps
+        name-allowlist:
+          - zephyr
+          - mbedtls
+          - mcuboot
+          - zcbor
+          - hal_nxp
+
+  self:
+    path: app
