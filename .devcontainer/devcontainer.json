@@ -1,3 +1,4 @@
 {
-  "image": "golioth/golioth-zephyr-base:0.16.3-SDK-v0"
+  "image": "golioth/golioth-zephyr-base:0.16.3-SDK-v0",
+  "onCreateCommand": "west init -l app/ && west update --narrow -o=--depth=1 && west zephyr-export && pip3 install -r deps/zephyr/scripts/requirements-base.txt"
 }
